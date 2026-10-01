@@ -5,11 +5,8 @@ Learning project for core Python concepts, built up with Claude Code.
 ## Structure
 
 - `src/learn_python_with_claude/` — package source
-  - `core_python_01/` — Lesson 1 and roadmap of all topics
 - `tests/` — pytest tests
 - `pyproject.toml` — project metadata and dependencies
-- `.claude/settings.json` — Claude Code hook configuration (logging)
-- `logs/session-log.jsonl` — Activity log of all Claude tool calls
 
 ## Conventions
 
@@ -33,15 +30,37 @@ python -m pytest tests/
 pytest tests/test_lesson_01_running_python.py -v
 ```
 
-## Merge Guard
+## Workflow Enforcement
 
-`feature/claude-logs` holds Claude activity logs for internal learning only: other branches may merge into it, but it must never be merged into any other branch.
+All changes to `main` must go through pull requests. Enforced with defense-in-depth:
 
-Enforced by:
-- GitHub Actions workflow (`.github/workflows/block-logs-merge.yml`) — blocks merges on GitHub
-- Local git hook (`.githooks/pre-merge-commit`) — blocks merges locally
+### Local Git Hooks (`.githooks/`)
+Enable with: `git config core.hooksPath .githooks`
 
-Enable the local hook with: `git config core.hooksPath .githooks`
+- **`pre-commit`** — Blocks `git commit` directly to main
+- **`pre-push`** — Blocks `git push` directly to main
+- **`pre-merge-commit`** — Blocks merging `feature/claude-logs` into other branches
+
+All can be bypassed with `--no-verify` if absolutely necessary (not recommended).
+
+### GitHub Actions Workflows (`.github/workflows/`)
+
+- **`enforce-pr-workflow.yml`** — Detects direct commits that reach main and fails the build
+  - Allows: PR merges, initial commit
+  - Rejects: direct commits outside of PRs
+  
+- **`block-logs-merge.yml`** — Prevents `feature/claude-logs` from being merged into other branches
+  - Allows: other branches merging into `feature/claude-logs`
+  - Rejects: `feature/claude-logs` merging out
+
+### Workflow Process
+
+1. **Create feature branch** from main
+2. **Commit locally** (blocked from main by `pre-commit` hook)
+3. **Push branch** (blocked from main by `pre-push` hook)
+4. **Open PR** on GitHub
+5. **Merge PR** (workflows validate and allow merge)
+6. **Other branches receive updates** via `git merge origin/main`
 
 ## Lesson Roadmap
 
